@@ -103,3 +103,4 @@ Run the script without arguments to perform a full comparison of file contents.
 
 ```bash
 python src/compass_analyzer.py
+```
