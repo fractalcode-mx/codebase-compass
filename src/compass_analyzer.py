@@ -180,7 +180,7 @@ def main():
         outfile.write(f"{FILE_HEADER_LINE}\n")
         outfile.write(f"{FILE_HEADER_LINE}\n")
         outfile.write("Fractalcode - Codebase Compass\n")
-        outfile.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H%M%S')}\n")
+        outfile.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         outfile.write(f"Base Project: {base_path}\n")
         outfile.write(f"Target Project: {target_path}\n")
         outfile.write(f"{FILE_HEADER_LINE}\n\n")
