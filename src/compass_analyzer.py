@@ -15,6 +15,7 @@ import sys
 import datetime
 import re
 import hashlib
+import fnmatch
 from pathlib import Path
 from colorama import init, Fore, Style
 
@@ -30,7 +31,6 @@ class Colors:
     RED = Fore.RED
     RESET = Style.RESET_ALL
 
-# --- (Las funciones de soporte no cambian) ---
 def print_progress_bar(iteration, total, prefix='', suffix='', length=50, fill='█'):
     if total == 0: total = 1
     percent = ("{0:.1f}").format(100 * (iteration / float(total)))
@@ -51,10 +51,24 @@ def load_config(config_path='config.json'):
         print(f"{Colors.RED}Error: Could not decode JSON from '{config_path}'. Please check its format.")
         return None
 
-def is_ignored(path_segment, ignored_patterns, ignored_extensions):
-    if path_segment in ignored_patterns: return True
-    _, extension = os.path.splitext(path_segment)
-    if extension and extension in ignored_extensions: return True
+def is_ignored(relative_path, ignored_patterns, ignored_extensions):
+    """
+    Checks if a file or directory should be ignored based on its full relative path.
+    Uses fnmatch for wildcard support.
+    """
+    # Normalizar separadores de ruta para una comparación consistente
+    path_to_check = relative_path.replace(os.sep, '/')
+
+    # 1. Comprobar patrones de ruta completa (con comodines)
+    for pattern in ignored_patterns:
+        if fnmatch.fnmatch(path_to_check, pattern):
+            return True
+
+    # 2. Comprobar por extensión de archivo
+    _, extension = os.path.splitext(path_to_check)
+    if extension and extension in ignored_extensions:
+        return True
+
     return False
 
 def are_files_identical(path1, path2):
@@ -73,11 +87,32 @@ def are_files_identical(path1, path2):
         return False
 
 def generate_tree_comparison(base_root, target_root, ignored_patterns, ignored_extensions, quick_scan=False):
+    """
+    Generates a visual directory tree of the base_root, comparing each item
+    against the target_root.
+    """
     tree_dict = {}
     status_counts = {'✅': 0, '⚠️': 0, '❌': 0}
+
     for root, dirs, files in os.walk(base_root, topdown=True):
-        dirs[:] = [d for d in dirs if not is_ignored(d, ignored_patterns, ignored_extensions)]
-        files[:] = [f for f in files if not is_ignored(f, ignored_patterns, ignored_extensions)]
+
+        current_relative_dir = os.path.relpath(root, base_root)
+        if current_relative_dir == ".":
+            current_relative_dir = "" # Normalizar para el nivel raíz
+
+        # Filtrar directorios
+        original_dirs = list(dirs)
+        dirs[:] = [
+            d for d in original_dirs
+            if not is_ignored(os.path.join(current_relative_dir, d), ignored_patterns, ignored_extensions)
+        ]
+
+        # Filtrar archivos
+        files[:] = [
+            f for f in files
+            if not is_ignored(os.path.join(current_relative_dir, f), ignored_patterns, ignored_extensions)
+        ]
+
         relative_path = os.path.relpath(root, base_root)
         path_parts = [] if relative_path == "." else relative_path.split(os.sep)
         current_level = tree_dict
@@ -170,9 +205,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     base_name_slug = re.sub(r'[^a-zA-Z0-9_-]', '', base_path.name).lower()
-    # --- CORRECCIÓN DEL TYPO ---
     target_name_slug = re.sub(r'[^a-zA-Z0-9_-]', '', target_path.name).lower()
-    # --- FIN DE LA CORRECCIÓN ---
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = os.path.join(output_dir, f"comparison_{base_name_slug}_{target_name_slug}_{timestamp}.txt")
 
