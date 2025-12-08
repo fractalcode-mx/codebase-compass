@@ -12,13 +12,14 @@ Its primary purpose is to provide developers with a clear, actionable report to 
 
 ## Features
 
-*   **Deep Content Comparison**: By default, compares files efficiently first by size, then by SHA-256 hash to accurately detect any modifications.
+*   **Integrity Verification**: Verifies if files are bit-by-bit identical by comparing file size and SHA-256 hashes for precise change detection.
 *   **Three-State Visual Tree**: Generates an intuitive directory tree using clear icons to represent the status of each file and folder:
     *   `✅` **Identical**: The file/directory exists and its content is identical.
     *   `⚠️` **Modified**: The file exists but its content has changed.
     *   `❌` **Missing**: The file/directory from the base project is missing in the target.
-*   **Comprehensive Summary**: The output includes a high-level summary with totals, percentages, and a visual bar chart (`🟩🟨🟥`) to quickly assess the overall project drift.
-*   **Highly Configurable**: Uses a `config.json` file to easily define the base and target paths, and to exclude specific directories, files, or extensions.
+*   **Instant Diagnosis**: The output includes a high-level summary with totals, percentages, and a visual bar chart (`🟩🟨🟥`) to quickly assess the overall project drift.
+*   **Highly Configurable**: Uses a `config.json` file for logical configuration (paths, ignores) and a centralized section in `src/ui.py` for easy visual customization.
+*   **Optimized Performance**: Written in pure Python to be extremely fast. Analyzes thousands of files and generates the report in seconds.
 *   **Quick Scan Mode**: Includes a `--quick-scan` flag to perform a faster comparison that only checks for the existence of files, skipping the content analysis.
 
 ## Prerequisites
@@ -66,41 +67,14 @@ Follow these steps to set up the environment and prepare the tool for use.
     ```
     b. Open `config.json` and edit the values. The most important fields are `base_project_path` and `target_project_path`.
 
-    ```json
-    {
-        "base_project_path": "C:/path/to/your/framework-base",
-        "target_project_path": "C:/path/to/your/project-instance",
-        "ignored_patterns": [
-            "node_modules",
-            "vendor",
-            ".venv",
-            "venv",
-            ".git",
-            ".vscode",
-            ".DS_Store",
-            "composer.lock",
-            "output"
-        ],
-        "ignored_file_extensions": [
-            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".ico",
-            ".woff", ".woff2", ".ttf", ".otf", ".eot",
-            ".zip", ".tar", ".gz", ".rar", ".7z",
-            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-            ".psd", ".ai", ".sketch",
-            ".db", ".sqlite",
-            ".md", ".map"
-        ]
-    }
-    ```
-
 ## Usage
 
 Once configured, you can generate a comparison report with the following commands.
 
 #### Deep Comparison (Default Behavior)
 
-Run the script without arguments to perform a full comparison of file contents.
+Run the script from the project root to perform a full comparison of file contents.
 
 ```bash
-python src/compass_analyzer.py
+python src/compass.py
 ```
