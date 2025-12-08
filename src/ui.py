@@ -29,6 +29,11 @@ STATUS_ICONS = {
 # --- Summary Section Formatting ---
 SUMMARY_LABEL_PADDING = 45  # Space reserved for the description labels
 SUMMARY_BAR_LENGTH = 40     # Total characters for the emoji bar chart
+BAR_CHART_CHARS = {
+    'identical': '🟩',
+    'modified': '🟨',
+    'missing': '🟥'
+}
 # ==============================================================================
 
 class Colors:
@@ -100,7 +105,12 @@ def write_report_file(output_filename, base_path, target_path, comparison_data, 
                 elif max_val == percent_modified: chars_modified += diff
                 else: chars_missing += diff
 
-            bar_chart_line = ("  " + "🟩" * chars_identical + "🟨" * chars_modified + "🟥" * chars_missing)
+            bar_chart_line = (
+                "  " +
+                BAR_CHART_CHARS['identical'] * chars_identical +
+                BAR_CHART_CHARS['modified'] * chars_modified +
+                BAR_CHART_CHARS['missing'] * chars_missing
+            )
             outfile.write(f"\n{bar_chart_line}")
 
         outfile.write(f"\n{FILE_SEPARATOR_LINE}\n\n")
