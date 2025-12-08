@@ -6,6 +6,10 @@
 
 # Codebase Compass by Fractalcode
 
+<img alt="Codebase Compass demo" src="./assets/demo.gif">
+
+<br>
+
 **Codebase Compass** is a Python CLI tool that visually compares two codebases to detect drift and maintain consistency. It generates a single text file (`.txt`) that clearly displays the structural and content differences between a base project (the "source of truth") and a target implementation.
 
 Its primary purpose is to provide developers with a clear, actionable report to easily identify discrepancies, manage updates, and ensure that different project instances remain synchronized with their original framework or boilerplate.
