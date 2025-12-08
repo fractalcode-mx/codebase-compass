@@ -19,6 +19,13 @@ FILE_LINE_WIDTH = 120
 FILE_HEADER_LINE = "=" * FILE_LINE_WIDTH
 FILE_SEPARATOR_LINE = "-" * FILE_LINE_WIDTH
 
+# --- Status Icons ---
+STATUS_ICONS = {
+    'identical': '✅',
+    'modified': '⚠️',
+    'missing': '❌'
+}
+
 # --- Summary Section Formatting ---
 SUMMARY_LABEL_PADDING = 45  # Space reserved for the description labels
 SUMMARY_BAR_LENGTH = 40     # Total characters for the emoji bar chart
@@ -43,7 +50,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', length=50, fill='
     sys.stdout.flush()
     if iteration == total: sys.stdout.write('\n')
 
-def write_report_file(output_filename, base_path, target_path, comparison_tree, status_counts):
+def write_report_file(output_filename, base_path, target_path, comparison_data, status_counts):
     """
     Writes the complete comparison report to a text file.
     This function handles all file I/O and formatting for the final output.
@@ -67,9 +74,9 @@ def write_report_file(output_filename, base_path, target_path, comparison_tree, 
         if total_items == 0:
             outfile.write("No items found to compare with the current filters.\n")
         else:
-            total_identical = status_counts.get('✅', 0)
-            total_modified = status_counts.get('⚠️', 0)
-            total_missing = status_counts.get('❌', 0)
+            total_identical = status_counts.get('identical', 0)
+            total_modified = status_counts.get('modified', 0)
+            total_missing = status_counts.get('missing', 0)
 
             percent_identical = (total_identical / total_items) * 100
             percent_modified = (total_modified / total_items) * 100
@@ -77,9 +84,9 @@ def write_report_file(output_filename, base_path, target_path, comparison_tree, 
 
             outfile.write(f"  Total items compared: {total_items}\n\n")
 
-            outfile.write(f"  ✅ { 'Identical (or directory exists):':<{SUMMARY_LABEL_PADDING}} {total_identical:>5} ({percent_identical:5.1f}% )\n")
-            outfile.write(f"  ⚠️ { 'Exists but content is different:':<{SUMMARY_LABEL_PADDING}} {total_modified:>5} ({percent_modified:5.1f}% )\n")
-            outfile.write(f"  ❌ { 'Does not exist in the target project:':<{SUMMARY_LABEL_PADDING}} {total_missing:>5} ({percent_missing:5.1f}% )\n")
+            outfile.write(f"  {STATUS_ICONS['identical']} { 'Identical (or directory exists):':<{SUMMARY_LABEL_PADDING}} {total_identical:>5} ({percent_identical:5.1f}% )\n")
+            outfile.write(f"  {STATUS_ICONS['modified']} { 'Exists but content is different:':<{SUMMARY_LABEL_PADDING}} {total_modified:>5} ({percent_modified:5.1f}% )\n")
+            outfile.write(f"  {STATUS_ICONS['missing']} { 'Does not exist in the target project:':<{SUMMARY_LABEL_PADDING}} {total_missing:>5} ({percent_missing:5.1f}% )\n")
 
             chars_identical = round((percent_identical / 100) * SUMMARY_BAR_LENGTH)
             chars_modified = round((percent_modified / 100) * SUMMARY_BAR_LENGTH)
@@ -104,5 +111,12 @@ def write_report_file(output_filename, base_path, target_path, comparison_tree, 
         outfile.write(f"{detailed_header}{'-' * (FILE_LINE_WIDTH - len(detailed_header))}\n")
 
         outfile.write(f"{base_path.name}/\n")
-        outfile.write("\n".join(comparison_tree))
+
+        # Render the tree from the raw data
+        tree_lines = [
+            f"{prefix}{connector}{name} {STATUS_ICONS[status_key]}"
+            for prefix, connector, name, status_key in comparison_data
+        ]
+        outfile.write("\n".join(tree_lines))
+
         outfile.write(f"\n{FILE_SEPARATOR_LINE}\n")

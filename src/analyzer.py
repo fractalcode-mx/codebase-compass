@@ -48,12 +48,12 @@ def are_files_identical(path1, path2):
 
 def generate_tree_comparison(base_root, target_root, ignored_patterns, ignored_extensions, quick_scan=False):
     """
-    Generates a visual directory tree of the base_root, comparing each item
-    against the target_root.
-    Returns a tuple: (list of tree lines, dictionary of status counts).
+    Generates a data structure representing the directory tree and its comparison status.
+    Returns a tuple: (list of raw tree data, dictionary of status counts).
+    The raw data is a list of tuples: (prefix, connector, name, status_key).
     """
     tree_dict = {}
-    status_counts = {'✅': 0, '⚠️': 0, '❌': 0}
+    status_counts = {'identical': 0, 'modified': 0, 'missing': 0}
 
     for root, dirs, files in os.walk(base_root, topdown=True):
         current_relative_dir = os.path.relpath(root, base_root)
@@ -79,33 +79,37 @@ def generate_tree_comparison(base_root, target_root, ignored_patterns, ignored_e
         for f in files:
             current_level.setdefault(f, None)
 
-    def build_string_with_comparison(d, prefix='', current_path=''):
-        lines = []
+    def build_data_with_comparison(d, prefix='', current_path=''):
+        data_list = []
         items = sorted(d.keys(), key=lambda x: (d[x] is None, x.lower()))
         for i, name in enumerate(items):
             connector = '└── ' if i == len(items) - 1 else '├── '
             base_path_item = os.path.join(base_root, current_path, name)
             target_path_item = os.path.join(target_root, current_path, name)
+
+            status_key = ''
             if not os.path.exists(target_path_item):
-                status_icon = "❌"
+                status_key = "missing"
             else:
                 is_dir = d[name] is not None
                 if is_dir:
-                    status_icon = "✅"
+                    status_key = "identical"
                 else:
                     if quick_scan:
-                        status_icon = "✅"
+                        status_key = "identical"
                     else:
                         if are_files_identical(base_path_item, target_path_item):
-                            status_icon = "✅"
+                            status_key = "identical"
                         else:
-                            status_icon = "⚠️"
-            status_counts[status_icon] += 1
-            lines.append(f"{prefix}{connector}{name} {status_icon}")
+                            status_key = "modified"
+
+            status_counts[status_key] += 1
+            data_list.append((prefix, connector, name, status_key))
+
             if d[name] is not None:
                 extension = '    ' if i == len(items) - 1 else '│   '
-                lines.extend(build_string_with_comparison(d[name], prefix + extension, os.path.join(current_path, name)))
-        return lines
+                data_list.extend(build_data_with_comparison(d[name], prefix + extension, os.path.join(current_path, name)))
+        return data_list
 
-    tree_lines = build_string_with_comparison(tree_dict)
-    return tree_lines, status_counts
+    tree_data = build_data_with_comparison(tree_dict)
+    return tree_data, status_counts
