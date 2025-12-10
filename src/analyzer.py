@@ -19,21 +19,26 @@ def load_config(config_path='config.json'):
 def is_ignored(relative_path, simple_ignore_set, wildcard_ignore_list, ignored_extensions):
     """
     Checks if a file or directory should be ignored.
-    First, it performs a very fast check on the basename against simple patterns.
-    Then, it checks the full relative path against wildcard patterns.
+    This version performs two fast checks against the simple_ignore_set
+    before falling back to the slower wildcard matching.
     """
-    # 1. Ultra-fast check on basename (for patterns like '.git', 'node_modules')
-    basename = os.path.basename(relative_path)
+    path_to_check = relative_path.replace(os.sep, '/')
+
+    # 1. Fast check: full relative path (for patterns like 'app/panel/file.php')
+    if path_to_check in simple_ignore_set:
+        return True
+
+    # 2. Fast check: basename only (for patterns like '.git', 'node_modules')
+    basename = os.path.basename(path_to_check)
     if basename in simple_ignore_set:
         return True
 
-    # 2. Check by file extension (also very fast)
+    # 3. Fast check: file extension
     _, extension = os.path.splitext(basename)
     if extension and extension in ignored_extensions:
         return True
 
-    # 3. Only if fast checks fail, proceed with slower fnmatch
-    path_to_check = relative_path.replace(os.sep, '/')
+    # 4. Slow fallback: wildcard matching for complex patterns
     for pattern in wildcard_ignore_list:
         if fnmatch.fnmatch(path_to_check, pattern):
             return True
