@@ -16,18 +16,28 @@ def load_config(config_path='config.json'):
         print(f"{Colors.RED}Error: Could not decode JSON from '{config_path}'. Please check its format.")
         return None
 
-def is_ignored(relative_path, ignored_patterns, ignored_extensions):
+def is_ignored(relative_path, simple_ignore_set, wildcard_ignore_list, ignored_extensions):
     """
-    Checks if a file or directory should be ignored based on its full relative path.
-    Uses fnmatch for wildcard support.
+    Checks if a file or directory should be ignored.
+    First, it performs a very fast check on the basename against simple patterns.
+    Then, it checks the full relative path against wildcard patterns.
     """
-    path_to_check = relative_path.replace(os.sep, '/')
-    for pattern in ignored_patterns:
-        if fnmatch.fnmatch(path_to_check, pattern):
-            return True
-    _, extension = os.path.splitext(path_to_check)
+    # 1. Ultra-fast check on basename (for patterns like '.git', 'node_modules')
+    basename = os.path.basename(relative_path)
+    if basename in simple_ignore_set:
+        return True
+
+    # 2. Check by file extension (also very fast)
+    _, extension = os.path.splitext(basename)
     if extension and extension in ignored_extensions:
         return True
+
+    # 3. Only if fast checks fail, proceed with slower fnmatch
+    path_to_check = relative_path.replace(os.sep, '/')
+    for pattern in wildcard_ignore_list:
+        if fnmatch.fnmatch(path_to_check, pattern):
+            return True
+
     return False
 
 def are_files_identical(path1, path2):
@@ -50,10 +60,13 @@ def generate_tree_comparison(base_root, target_root, ignored_patterns, ignored_e
     """
     Generates a data structure representing the directory tree and its comparison status.
     Returns a tuple: (list of raw tree data, dictionary of status counts).
-    The raw data is a list of tuples: (prefix, connector, name, status_key).
     """
     tree_dict = {}
     status_counts = {'identical': 0, 'modified': 0, 'missing': 0}
+
+    # Pre-process ignore patterns for optimization.
+    simple_ignore_set = {p for p in ignored_patterns if '*' not in p and '?' not in p and '[' not in p}
+    wildcard_ignore_list = [p for p in ignored_patterns if p not in simple_ignore_set]
 
     for root, dirs, files in os.walk(base_root, topdown=True):
         current_relative_dir = os.path.relpath(root, base_root)
@@ -62,11 +75,11 @@ def generate_tree_comparison(base_root, target_root, ignored_patterns, ignored_e
         original_dirs = list(dirs)
         dirs[:] = [
             d for d in original_dirs
-            if not is_ignored(os.path.join(current_relative_dir, d), ignored_patterns, ignored_extensions)
+            if not is_ignored(os.path.join(current_relative_dir, d), simple_ignore_set, wildcard_ignore_list, ignored_extensions)
         ]
         files[:] = [
             f for f in files
-            if not is_ignored(os.path.join(current_relative_dir, f), ignored_patterns, ignored_extensions)
+            if not is_ignored(os.path.join(current_relative_dir, f), simple_ignore_set, wildcard_ignore_list, ignored_extensions)
         ]
 
         relative_path = os.path.relpath(root, base_root)
